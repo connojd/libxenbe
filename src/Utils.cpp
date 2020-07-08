@@ -71,11 +71,11 @@ string Utils::getVersion()
 	return VERSION;
 }
 
+#ifndef _WIN32
 /*******************************************************************************
- * PollFd
+ * UnixPollFd
  ******************************************************************************/
-
-PollFd::PollFd(int fd, short int events)
+UnixPollFd::UnixPollFd(int fd, short int events)
 {
 	try
 	{
@@ -89,12 +89,12 @@ PollFd::PollFd(int fd, short int events)
 	}
 }
 
-PollFd::~PollFd()
+UnixPollFd::~UnixPollFd()
 {
 	release();
 }
 
-bool PollFd::poll()
+bool UnixPollFd::poll()
 {
 	mFds[PollIndex::FILE].revents = 0;
 	mFds[PollIndex::PIPE].revents = 0;
@@ -140,7 +140,7 @@ bool PollFd::poll()
 	return true;
 }
 
-void PollFd::stop()
+void UnixPollFd::stop()
 {
 	uint8_t data = 0xFF;
 
@@ -150,7 +150,7 @@ void PollFd::stop()
 	}
 }
 
-void PollFd::init(int fd, short int events)
+void UnixPollFd::init(int fd, short int events)
 {
 	mPipeFds[PipeType::READ] = -1;
 	mPipeFds[PipeType::WRITE] = -1;
@@ -167,7 +167,7 @@ void PollFd::init(int fd, short int events)
 	mFds[PollIndex::PIPE].events = POLLIN;
 }
 
-void PollFd::release()
+void UnixPollFd::release()
 {
 	if (mPipeFds[PipeType::READ] >= 0)
 	{
@@ -180,6 +180,74 @@ void PollFd::release()
 	}
 }
 
+#else
+/*******************************************************************************
+ * WinPollFd
+ ******************************************************************************/
+WinPollFd::WinPollFd()
+{
+	try
+	{
+		//init(fd, events);
+	}
+	catch(const std::exception& e)
+	{
+		throw;
+	}
+}
+
+WinPollFd::~WinPollFd()
+{
+}
+
+bool WinPollFd::poll()
+{
+	/*
+    DWORD   wait = WaitForMultipleObjectsEx(4, events, FALSE, INFINITE, TRUE);
+
+    switch (wait) {
+    case WAIT_OBJECT_0:
+        ResetEvent(m_svc_stop);
+        return false; // exit loop
+
+    case WAIT_OBJECT_0+1:
+        ResetEvent(m_xeniface.m_evt_shutdown);
+        return !m_xeniface.CheckShutdown();
+
+    case WAIT_OBJECT_0+2:
+        ResetEvent(m_xeniface.m_evt_suspend);
+        m_xeniface.CheckSuspend();
+        return true; // continue loop
+
+    case WAIT_OBJECT_0+3: {
+        std::string mode;
+
+        ResetEvent(m_xeniface.m_evt_slate_mode);
+        if (m_xeniface.CheckSlateMode(&mode))
+            m_conv.SetSlateMode(mode);
+
+        return true; // continue loop
+    }
+    case WAIT_IO_COMPLETION:
+    case WAIT_TIMEOUT:
+        m_xeniface.CheckSuspend();
+        return !m_xeniface.CheckShutdown();
+
+    default:
+        CXenAgent::Log("WaitForMultipleObjects failed (%08x)\n", wait);
+        EventLog(EVENT_XENUSER_UNEXPECTED);
+        return true; // continue loop
+    }
+	*/
+    return true;
+}
+
+void WinPollFd::stop()
+{
+
+}
+#endif
+  
 /*******************************************************************************
  * AsyncContext
  ******************************************************************************/

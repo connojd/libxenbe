@@ -20,8 +20,10 @@
 
 #ifndef XENBE_XENGNTTAB_HPP_
 #define XENBE_XENGNTTAB_HPP_
-
+#ifndef _WIN32
 #include <sys/mman.h>
+#endif
+
 #include <vector>
 
 extern "C" {

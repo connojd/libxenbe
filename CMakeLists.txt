@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.0)
 
 OPTION(WITH_TEST "build with test" ON)
 OPTION(WITH_DOC "build with documenation" OFF)
+OPTION(WITH_WIN "build with windows support" OFF)
 
 message(STATUS)
 message(STATUS "${PROJECT_NAME} Configuration:")
@@ -14,9 +15,16 @@ message(STATUS "CMAKE_INSTALL_PREFIX          = ${CMAKE_INSTALL_PREFIX}")
 message(STATUS)
 message(STATUS "WITH_DOC                      = ${WITH_DOC}")
 message(STATUS "WITH_TEST                     = ${WITH_TEST}")
+message(STATUS "WITH_WIN                      = ${WITH_WIN}")
 message(STATUS)
 message(STATUS "XEN_INCLUDE_PATH              = ${XEN_INCLUDE_PATH}")
 message(STATUS "XEN_LIB_PATH                  = ${XEN_LIB_PATH}")
+message(STATUS "XC_INCLUDE_PATH               = ${XC_INCLUDE_PATH}")
+message(STATUS "XC_LIB_PATH                   = ${XC_LIB_PATH}")
+message(STATUS "XENIFACE_WINDOWS_INCLUDE_PATH = ${XENIFACE_WINDOWS_INCLUDE_PATH}")
+message(STATUS "XENIFACE_WINDOWS_LIB_PATH     = ${XENIFACE_WINDOWS_LIB_PATH}")
+message(STATUS "XENBUS_WINDOWS_INCLUDE_PATH   = ${XENBUS_WINDOWS_INCLUDE_PATH}")
+message(STATUS "XENBUS_WINDOWS_LIB_PATH       = ${XENBUS_WINDOWS_LIB_PATH}")
 message(STATUS)
 
 ################################################################################
@@ -52,10 +60,17 @@ include_directories(
 	include
 	include/xen/be
 	${XEN_INCLUDE_PATH}
+	${XC_INCLUDE_PATH}	
+	${XEN_WINDOWS_INCLUDE_PATH}
 	${CMAKE_CURRENT_BINARY_DIR}
 )
 
-link_directories(${XEN_LIB_PATH})
+link_directories(
+	${XEN_LIB_PATH}
+	${XC_LIB_PATH}
+	${XEN_WINDOW_LIB_PATH}
+)
+
 
 ################################################################################
 # Sources

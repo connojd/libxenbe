@@ -20,7 +20,9 @@
 
 #include "XenEvtchn.hpp"
 
+#ifndef _WIN32
 #include <poll.h>
+#endif
 
 using std::lock_guard;
 using std::mutex;
@@ -138,8 +140,11 @@ void XenEvtchn::init(domid_t domId, evtchn_port_t port)
 								 errno);
 	}
 
-	mPollFd.reset(new PollFd(xenevtchn_fd(mHandle), POLLIN));
-
+#ifndef _WIN32
+	mPollFd.reset(new UnixPollFd(xenevtchn_fd(mHandle), POLLIN));
+#else
+	mPollFd.reset(new WinPollFd());
+#endif
 	DLOG(mLog, DEBUG) << "Create event channel, dom: " << domId
 					  << ", remote port: " << port << ", local port: "
 					  << mPort;

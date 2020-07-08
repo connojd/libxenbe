@@ -19,8 +19,9 @@
  */
 #include "XenStore.hpp"
 
+#ifndef _WIN32
 #include <poll.h>
-
+#endif
 using std::lock_guard;
 using std::mutex;
 using std::string;
@@ -294,8 +295,11 @@ void XenStore::init()
 		throw XenStoreException("Can't open xs daemon", errno);
 	}
 
-	mPollFd.reset(new PollFd(xs_fileno(mXsHandle), POLLIN));
-
+#ifndef _WIN32
+	mPollFd.reset(new UnixPollFd(xs_fileno(mXsHandle), POLLIN));
+#else
+	mPollFd.reset(new WinPollFd());
+#endif
 	LOG(mLog, DEBUG) << "Create xen store";
 }
 

@@ -26,9 +26,14 @@
 #include <list>
 #include <string>
 #include <thread>
+#include <vector>
 
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <poll.h>
 #include <unistd.h>
+#endif
 
 extern "C" {
 #include <xenctrl.h>
@@ -67,7 +72,34 @@ public:
 };
 
 /***************************************************************************//**
- * Class to poll file descriptor.
+ * Interface class to poll for events.
+ *
+ * @ingroup backend
+ ******************************************************************************/
+class PollFd
+{
+public:
+
+	PollFd() {}
+	virtual ~PollFd() {}
+
+	/**
+	 * Polls the file descriptors for defined events
+	 * @return <i>true</i> if one of defined events occurred and <i>false</i>
+	 * if the method was interrupted by calling stop()
+	 */
+	virtual bool poll() = 0;
+
+	/**
+	 * Stops polling
+	 */
+	virtual void stop() = 0;
+};
+
+
+#ifndef _WIN32
+/***************************************************************************//**
+ * Class to poll file descriptor for.
  *
  * The PollFd class also opens an additional pipe. On poll() method it waits
  * for both: the defined file descriptor and the internal pipe file descriptor.
@@ -76,7 +108,7 @@ public:
  * deleted.
  * @ingroup backend
  ******************************************************************************/
-class PollFd
+class UnixPollFd : public PollFd
 {
 public:
 
@@ -84,8 +116,8 @@ public:
 	 * @param fd     file descriptor
 	 * @param events events to poll (same as in system poll function)
 	 */
-	PollFd(int fd, short int events);
-	~PollFd();
+	UnixPollFd(int fd, short int events);
+	~UnixPollFd();
 
 	/**
 	 * Polls the file descriptors for defined events
@@ -120,7 +152,41 @@ private:
 	void release();
 };
 
+#else
 /***************************************************************************//**
+ * Class to poll file descriptor for.
+ *
+ * The PollFd class also opens an additional pipe. On poll() method it waits
+ * for both: the defined file descriptor and the internal pipe file descriptor.
+ * The internal pipe file descriptor breaks poll() when stop() method is
+ * invoked. It is used to unblock poll() when an object using PollFd is been
+ * deleted.
+ * @ingroup backend
+ ******************************************************************************/
+class WinPollFd : public PollFd
+{
+public:
+	WinPollFd();
+	~WinPollFd();
+
+	/**
+	 * Polls the file descriptors for defined events
+	 * @return <i>true</i> if one of defined events occurred and <i>false</i>
+	 * if the method was interrupted by calling stop()
+	 */
+	bool poll();
+
+	/**
+	 * Stops polling
+	 */
+	void stop();
+
+private:
+        std::vector<HANDLE> m_event_handles;
+};
+#endif
+  
+ /***************************************************************************//**
  * Implements asynchronous context
  *
  * This class allows to call a function asynchronously.

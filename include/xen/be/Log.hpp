@@ -22,6 +22,7 @@
 #define XENBE_LOG_HPP_
 
 #include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <cstring>
 #include <iomanip>

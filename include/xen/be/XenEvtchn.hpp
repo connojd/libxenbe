@@ -111,7 +111,7 @@ public:
 	/**
 	 * Returns event channel port
 	 */
-	xenevtchn_port_or_error_t getPort() const { return mPort; }
+	xenevtchn_port_or_error_t getPort() { return mPort; }
 
 	/**
 	 * Sets error callback
