@@ -33,6 +33,7 @@ struct xc_domaininfo_t {
   uint32_t flags;
   domid_t domain;
 };
+
 // libxc wrappers
 xc_interface *xc_interface_open(void *logger, void *dombuild_logger, unsigned open_flags);
 int xc_interface_close(xc_interface *xc);

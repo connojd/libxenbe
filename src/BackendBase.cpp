@@ -101,7 +101,7 @@ BackendBase::~BackendBase()
 
 	mFrontendHandlers.clear();
 
-	LOG(mLog, DEBUG) << "Delete";
+	LOG(mLog, INFO) << "Delete" << __func__;
 }
 
 /*******************************************************************************
@@ -155,10 +155,10 @@ void BackendBase::addFrontendHandler(FrontendHandlerPtr frontendHandler)
 
 void BackendBase::domainListChanged(const string& path)
 {
+	LOG(mLog, INFO) << "domainListChanged";
 	for (auto domain : mXenStore.readDirectory(path))
 	{
 		domid_t domId = stoi(domain);
-
 		if (find(mDomainList.begin(), mDomainList.end(), domId) ==
 			mDomainList.end())
 		{
@@ -173,6 +173,7 @@ void BackendBase::domainListChanged(const string& path)
 
 void BackendBase::deviceListChanged(const string& path, domid_t domId)
 {
+	LOG(mLog, INFO) << "deviceListChanged" << path;
 	if (!mXenStore.checkIfExist(path))
 	{
 		auto it = find(mDomainList.begin(), mDomainList.end(), domId);
@@ -194,7 +195,7 @@ void BackendBase::deviceListChanged(const string& path, domid_t domId)
 		{
 			if (!getFrontendHandler(domId, devId))
 			{
-				LOG(mLog, DEBUG) << "New frontend found, domid: "
+				LOG(mLog, INFO) << "New frontend found, domid: "
 						<< domId << ", devid: " << devId;
 
 				onNewFrontend(domId, devId);
@@ -210,7 +211,7 @@ void BackendBase::deviceListChanged(const string& path, domid_t domId)
 void BackendBase::frontendPathChanged(const string& path, domid_t domId,
 									  uint16_t devId)
 {
-	LOG(mLog, DEBUG) << "Frontend path changed: " << path;
+	LOG(mLog, INFO) << "Frontend path changed: " << path;
 
 	if (!mXenStore.checkIfExist(path))
 	{

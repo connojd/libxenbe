@@ -88,7 +88,7 @@ public:
 	 * @return <i>true</i> if one of defined events occurred and <i>false</i>
 	 * if the method was interrupted by calling stop()
 	 */
-	virtual bool poll() = 0;
+	virtual int poll() = 0;
 
 	/**
 	 * Stops polling
@@ -124,7 +124,7 @@ public:
 	 * @return <i>true</i> if one of defined events occurred and <i>false</i>
 	 * if the method was interrupted by calling stop()
 	 */
-	bool poll();
+	int poll();
 
 	/**
 	 * Stops polling
@@ -174,7 +174,7 @@ public:
 	 * @return <i>true</i> if one of defined events occurred and <i>false</i>
 	 * if the method was interrupted by calling stop()
 	 */
-	bool poll();
+	int poll();
 
 	/**
 	 * Stops polling
@@ -182,7 +182,8 @@ public:
 	void stop();
 
 private:
-        std::vector<HANDLE> m_event_handles;
+	//void init(int fd, short int events);
+	std::vector<HANDLE> m_event_handles;
 };
 #endif
   

@@ -180,7 +180,13 @@ private:
 	std::thread mThread;
 	std::mutex mMutex;
 
+	#ifndef _WIN32
 	std::unique_ptr<PollFd> mPollFd;
+	#else
+	std::unordered_map<std::string, HANDLE> mWatchHandles;
+	std::unordered_map<std::string, PVOID> mWatchOpaques;
+	HANDLE mWatchThread;
+	#endif
 
 	void init();
 	void release();

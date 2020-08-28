@@ -1,3 +1,4 @@
+
 project(libxenbe)
 
 
@@ -34,7 +35,8 @@ endif()
 ################################################################################
 
 set(SOURCES
-	xenctrl.c
+	xenctrl_internal.c
+	global_state.cpp
 	BackendBase.cpp
 	FrontendHandlerBase.cpp
 	RingBufferBase.cpp
@@ -50,7 +52,7 @@ set(SOURCES
 # Libraries
 ################################################################################
 if(WITH_WIN)
-	link_directories(${XENIFACE_WINDOWS_LIB_PATH})
+	link_directories(${XENIFACE_WINDOWS_LIB_PATH} ${XENBUS_WINDOWS_LIB_PATH})
 endif()
 
 
@@ -68,7 +70,6 @@ endif()
 if(WITH_WIN)
 	target_link_libraries(xenbe
 		xencontrol
-		xenbus
 	)
 else()
 	target_link_libraries(xenbe

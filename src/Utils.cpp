@@ -94,7 +94,7 @@ UnixPollFd::~UnixPollFd()
 	release();
 }
 
-bool UnixPollFd::poll()
+int UnixPollFd::poll()
 {
 	mFds[PollIndex::FILE].revents = 0;
 	mFds[PollIndex::PIPE].revents = 0;
@@ -188,7 +188,7 @@ WinPollFd::WinPollFd()
 {
 	try
 	{
-		//init(fd, events);
+
 	}
 	catch(const std::exception& e)
 	{
@@ -200,9 +200,10 @@ WinPollFd::~WinPollFd()
 {
 }
 
-bool WinPollFd::poll()
+int WinPollFd::poll()
 {
 	/*
+
     DWORD   wait = WaitForMultipleObjectsEx(4, events, FALSE, INFINITE, TRUE);
 
     switch (wait) {
