@@ -203,7 +203,7 @@ bool XenStore::checkIfExist(const string& path)
 
 void XenStore::setWatch(const string& path, WatchCallback callback)
 {
-	lock_guard<mutex> lock(mMutex);
+//	lock_guard<mutex> lock(mMutex);
 
 	LOG(mLog, INFO) << "Set watch: " << path;
 #ifndef _WIN32
@@ -212,7 +212,7 @@ void XenStore::setWatch(const string& path, WatchCallback callback)
 		throw XenStoreException("Can't set xs watch for " + path, errno);
 	}
 #else
-	mWatchHandles[path] = CreateEvent(NULL, FALSE, FALSE, TEXT("XSWATCH"));
+	mWatchHandles[path] = CreateEvent(NULL, FALSE, FALSE, NULL);
 	PVOID handle;
 	std::string str(path);
     DWORD rc = XcStoreAddWatch((PXENCONTROL_CONTEXT)mXsHandle, (PCHAR)str.c_str(), mWatchHandles[path], &handle);
@@ -228,7 +228,7 @@ void XenStore::setWatch(const string& path, WatchCallback callback)
 
 void XenStore::clearWatch(const string& path)
 {
-	lock_guard<mutex> lock(mMutex);
+//	lock_guard<mutex> lock(mMutex);
 
 	LOG(mLog, DEBUG) << "Clear watch: " << path;
 #ifndef _WIN32
@@ -248,7 +248,7 @@ void XenStore::clearWatch(const string& path)
 
 void XenStore::clearWatches()
 {
-	lock_guard<mutex> lock(mMutex);
+//	lock_guard<mutex> lock(mMutex);
 
 	if (mWatches.size())
 	{
@@ -331,7 +331,7 @@ void XenStore::init()
 #ifndef _WIN32
 	mPollFd.reset(new UnixPollFd(xs_fileno(mXsHandle), POLLIN));
 #else
-	mWatchThread = CreateEvent(NULL, FALSE, FALSE, TEXT("WATCHTHREAD"));
+	mWatchThread = CreateEvent(NULL, FALSE, FALSE, NULL);
 #endif
 	LOG(mLog, DEBUG) << "Create xen store";
 }

@@ -155,13 +155,13 @@ void BackendBase::addFrontendHandler(FrontendHandlerPtr frontendHandler)
 
 void BackendBase::domainListChanged(const string& path)
 {
-	LOG(mLog, INFO) << "domainListChanged";
 	for (auto domain : mXenStore.readDirectory(path))
 	{
 		domid_t domId = stoi(domain);
 		if (find(mDomainList.begin(), mDomainList.end(), domId) ==
 			mDomainList.end())
 		{
+			LOG(mLog, INFO) << "domainListChanged";
 			mXenStore.setWatch(mFrontendsPath + "/" + domain,
 							   bind(&BackendBase::deviceListChanged, this,
 									_1, domId));
@@ -173,7 +173,6 @@ void BackendBase::domainListChanged(const string& path)
 
 void BackendBase::deviceListChanged(const string& path, domid_t domId)
 {
-	LOG(mLog, INFO) << "deviceListChanged" << path;
 	if (!mXenStore.checkIfExist(path))
 	{
 		auto it = find(mDomainList.begin(), mDomainList.end(), domId);
@@ -195,9 +194,6 @@ void BackendBase::deviceListChanged(const string& path, domid_t domId)
 		{
 			if (!getFrontendHandler(domId, devId))
 			{
-				LOG(mLog, INFO) << "New frontend found, domid: "
-						<< domId << ", devid: " << devId;
-
 				onNewFrontend(domId, devId);
 			}
 		}
