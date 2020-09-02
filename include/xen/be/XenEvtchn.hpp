@@ -24,6 +24,8 @@
 #include <atomic>
 #include <mutex>
 #include <thread>
+#include <unordered_map>
+#include <vector>
 
 extern "C" {
 #include <xenctrl.h>
@@ -130,7 +132,12 @@ private:
 
 	std::mutex mMutex;
 	std::thread mThread;
+#ifndef _WIN32
 	std::unique_ptr<PollFd> mPollFd;
+#else
+	HANDLE mWatchThread;
+	HANDLE mEventHandle;
+#endif
 
 	void init(domid_t domId, evtchn_port_t port);
 	void release();

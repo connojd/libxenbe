@@ -174,7 +174,7 @@ vector<string> XenStore::readDirectory(const string& path)
 		{
 			result.push_back(items[i]);
 		}
-
+		// TODO: LEAK
 		//free(items);
 
 		return result;
@@ -204,8 +204,6 @@ bool XenStore::checkIfExist(const string& path)
 void XenStore::setWatch(const string& path, WatchCallback callback)
 {
 //	lock_guard<mutex> lock(mMutex);
-
-	LOG(mLog, INFO) << "Set watch: " << path;
 #ifndef _WIN32
 	if (!xs_watch(mXsHandle, path.c_str(), path.c_str()))
 	{

@@ -161,7 +161,6 @@ void BackendBase::domainListChanged(const string& path)
 		if (find(mDomainList.begin(), mDomainList.end(), domId) ==
 			mDomainList.end())
 		{
-			LOG(mLog, INFO) << "domainListChanged";
 			mXenStore.setWatch(mFrontendsPath + "/" + domain,
 							   bind(&BackendBase::deviceListChanged, this,
 									_1, domId));

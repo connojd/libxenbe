@@ -88,12 +88,12 @@ void XenEvtchn::stop()
 	}
 
 	DLOG(mLog, DEBUG) << "Stop event channel, port: " << mPort;
-
+#ifndef _WIN32
 	if (mPollFd)
 	{
 		mPollFd->stop();
 	}
-
+#endif
 	if (mThread.joinable())
 	{
 		mThread.join();
@@ -131,10 +131,14 @@ void XenEvtchn::init(domid_t domId, evtchn_port_t port)
 	{
 		throw XenEvtchnException("Can't open event channel", errno);
 	}
-
+#ifndef _WIN32
 	mPort = xenevtchn_bind_interdomain(mHandle, domId, port);
-
-	if (mPort == -1)
+#else
+	mEventHandle = CreateEvent(NULL, FALSE, FALSE, NULL);
+	DWORD rc = XcEvtchnBindInterdomain((PXENCONTROL_CONTEXT)mHandle, domId, port, mEventHandle, FALSE, &mPort);
+	SetEvent(mWatchThread);
+#endif
+	if (mPort == -1 || rc != 0)
 	{
 		throw XenEvtchnException("Can't bind event channel: " + to_string(port),
 								 errno);
@@ -142,10 +146,8 @@ void XenEvtchn::init(domid_t domId, evtchn_port_t port)
 
 #ifndef _WIN32
 	mPollFd.reset(new UnixPollFd(xenevtchn_fd(mHandle), POLLIN));
-#else
-	mPollFd.reset(new WinPollFd());
 #endif
-	DLOG(mLog, DEBUG) << "Create event channel, dom: " << domId
+	DLOG(mLog, INFO) << "Create event channel, dom: " << domId
 					  << ", remote port: " << port << ", local port: "
 					  << mPort;
 }
@@ -169,6 +171,7 @@ void XenEvtchn::eventThread()
 {
 	try
 	{
+#ifndef _WIN32
 		while(mCallback && mPollFd->poll())
 		{
 			auto port = xenevtchn_pending(mHandle);
@@ -194,6 +197,33 @@ void XenEvtchn::eventThread()
 
 			mCallback();
 		}
+#else
+		bool watchLoop = true;
+		LOG(mLog, INFO) << "1";
+		DWORD haveWatches = WaitForSingleObject(mWatchThread, INFINITE);
+		LOG(mLog, INFO) << "2";
+		if (haveWatches == WAIT_OBJECT_0) {
+			ResetEvent(mWatchThread);
+			while (watchLoop) {
+				LOG(mLog, INFO) << "3";
+				DWORD wait = WaitForSingleObject(mEventHandle, INFINITE);
+				LOG(mLog, INFO) << "4";
+				if (wait == WAIT_OBJECT_0) {
+					LOG(mLog, INFO) << "5";
+					XcEvtchnUnmask((PXENCONTROL_CONTEXT)mHandle, mPort);
+					LOG(mLog, INFO) << "6";
+					if (mCallback) {
+						LOG(mLog, INFO) << "7";
+						mCallback();
+						LOG(mLog, INFO) << "8";
+					}
+				}
+				LOG(mLog, INFO) << "9";
+				ResetEvent(mEventHandle);
+				LOG(mLog, INFO) << "10";
+			}
+		}
+#endif
 	}
 	catch(const std::exception& e)
 	{
