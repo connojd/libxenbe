@@ -35,8 +35,7 @@ endif()
 ################################################################################
 
 set(SOURCES
-	xenctrl_internal.c
-	global_state.cpp
+	xenctrl_internal.cpp
 	BackendBase.cpp
 	FrontendHandlerBase.cpp
 	RingBufferBase.cpp
