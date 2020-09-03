@@ -1,7 +1,4 @@
 
-project(libxenbe)
-
-
 ################################################################################
 # Includes
 ################################################################################
@@ -26,8 +23,8 @@ if(WITH_WIN)
         file(RENAME ${XEN_INCS}/tmp/public ${XEN_INCS}/xen)
 
 	include_directories(${XEN_INCS})
-	include_directories(${XENBUS_WINDOWS_INCLUDE_PATH})	
-	include_directories(${XENIFACE_WINDOWS_INCLUDE_PATH})
+        include_directories(${XENBUS_WINDOWS_INCLUDE_PATH})
+        include_directories(${XENIFACE_WINDOWS_INCLUDE_PATH})
 endif()
 
 ################################################################################
@@ -60,7 +57,7 @@ endif()
 # Targets
 ################################################################################
 
-add_library(xenbe SHARED ${SOURCES} ${XEN_HEADERS})
+add_library(xenbe STATIC ${SOURCES} ${XEN_HEADERS})
 
 if(WITH_TEST)
 	add_library(xenbemock SHARED ${SOURCES})

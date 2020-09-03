@@ -7,20 +7,18 @@
 #include <xencontrol.h>
 typedef struct _XENCONTROL_CONTEXT xc_interface;
 
-#include <store_interface.h>
 typedef uint32_t xs_transaction_t;
-typedef unsigned short domid_t;
-typedef PXENCONTROL_CONTEXT *xs_handle;
+typedef uint16_t domid_t;
 #define XBT_NULL 0
 
-#include <evtchn_interface.h>
 typedef ULONG xenevtchn_port_or_error_t;
-typedef ULONG evtchn_port_t;
+typedef uint32_t evtchn_port_t;
 typedef HANDLE xenevtchn_handle;
+typedef PVOID xs_handle;
 
-#include <gnttab_interface.h>
 typedef uint32_t grant_ref_t;
 typedef HANDLE xengnttab_handle;
+
 // From sys/mman.h
 #define PROT_READ 0x1
 #define PROT_WRITE 0x2

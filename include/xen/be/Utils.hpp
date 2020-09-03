@@ -186,7 +186,7 @@ private:
 	std::vector<HANDLE> m_event_handles;
 };
 #endif
-  
+
  /***************************************************************************//**
  * Implements asynchronous context
  *
