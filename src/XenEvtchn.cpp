@@ -78,6 +78,8 @@ void XenEvtchn::start()
 	mStarted = true;
 
 	mThread = thread(&XenEvtchn::eventThread, this);
+
+	SetEvent(mWatchThread);
 }
 
 void XenEvtchn::stop()
@@ -136,7 +138,6 @@ void XenEvtchn::init(domid_t domId, evtchn_port_t port)
 #else
 	mEventHandle = CreateEvent(NULL, FALSE, FALSE, NULL);
 	DWORD rc = XcEvtchnBindInterdomain((PXENCONTROL_CONTEXT)mHandle, domId, port, mEventHandle, FALSE, &mPort);
-	SetEvent(mWatchThread);
 #endif
 	if (mPort == -1 || rc != 0)
 	{
@@ -199,30 +200,28 @@ void XenEvtchn::eventThread()
 		}
 #else
 		bool watchLoop = true;
-		LOG(mLog, INFO) << "1";
-		DWORD haveWatches = WaitForSingleObject(mWatchThread, INFINITE);
-		LOG(mLog, INFO) << "2";
-		if (haveWatches == WAIT_OBJECT_0) {
-			ResetEvent(mWatchThread);
-			while (watchLoop) {
-				LOG(mLog, INFO) << "3";
-				DWORD wait = WaitForSingleObject(mEventHandle, INFINITE);
-				LOG(mLog, INFO) << "4";
-				if (wait == WAIT_OBJECT_0) {
-					LOG(mLog, INFO) << "5";
-					XcEvtchnUnmask((PXENCONTROL_CONTEXT)mHandle, mPort);
-					LOG(mLog, INFO) << "6";
-					if (mCallback) {
-						LOG(mLog, INFO) << "7";
-						mCallback();
-						LOG(mLog, INFO) << "8";
-					}
+		//DWORD entry = WaitForSingleObject(mWatchThread, INFINITE);
+		while (watchLoop) {
+			DWORD wait = WaitForMultipleObjectsEx(1, &mEventHandle, FALSE, INFINITE, TRUE);
+			LOG(mLog, INFO) << "4";
+			if (wait == WAIT_OBJECT_0) {
+				LOG(mLog, INFO) << "5";
+				if (mCallback) {
+					mCallback();
 				}
-				LOG(mLog, INFO) << "9";
-				ResetEvent(mEventHandle);
-				LOG(mLog, INFO) << "10";
+
+				DWORD rc = XcEvtchnUnmask((PXENCONTROL_CONTEXT)mHandle, mPort);
+				if (rc) {
+					LOG(mLog, INFO) << "Failed to unmask event channel" << rc;
+				}
+			} else {
+				LOG(mLog, INFO) << "weird wait object";
 			}
+			LOG(mLog, INFO) << ResetEvent(mEventHandle);
 		}
+		//else {
+		//	LOG(mLog, INFO) << entry << GetLastError();;
+		//}
 #endif
 	}
 	catch(const std::exception& e)

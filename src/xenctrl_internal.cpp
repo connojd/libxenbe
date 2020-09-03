@@ -79,7 +79,7 @@ xenevtchn_port_or_error_t
 xenevtchn_bind_interdomain(xenevtchn_handle *xce, uint32_t domid,
                            evtchn_port_t remote_port)
 {
-    HANDLE event = CreateEvent(NULL, FALSE, FALSE, TEXT("EVTCHNBIND"));
+    HANDLE event = CreateEvent(NULL, FALSE, FALSE, NULL);
     ULONG localPort;
     return XcEvtchnBindInterdomain(xc, domid, remote_port, event, false, &localPort);
 }
