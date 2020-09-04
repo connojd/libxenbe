@@ -254,7 +254,7 @@ xengnttab_map_domain_grant_refs(void *xgt,
                                 int prot)
 {
     PVOID address = NULL;
-    DWORD rc = XcGnttabMapForeignPages(xc, domid, count, (PULONG)refs, 0, 0, (XENIFACE_GNTTAB_PAGE_FLAGS)prot, &address);
+    DWORD rc = XcGnttabMapForeignPages(xc, domid, count, (PULONG)refs, 0, 0, (XENIFACE_GNTTAB_PAGE_FLAGS)0, &address);
     return address;
 }
 
