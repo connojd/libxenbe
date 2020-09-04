@@ -27,6 +27,11 @@ typedef HANDLE xengnttab_handle;
 #define PROT_EXEC 0x4
 #define PROT_NONE 0x0
 #define XC_PAGE_SIZE 4096
+#ifdef _WIN32
+#define XENDLL __declspec(dllexport)
+#else
+#define XENDLL
+#endif
 
 #define XEN_DOMINF_running 0x1
 struct xc_domaininfo_t {
