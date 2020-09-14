@@ -75,11 +75,10 @@ void XenEvtchn::start()
 		throw XenEvtchnException("Event channel is already started", EPERM);
 	}
 
+        mNeedJoin = false;
 	mStarted = true;
 
 	mThread = thread(&XenEvtchn::eventThread, this);
-
-	SetEvent(mWatchThread);
 }
 
 void XenEvtchn::stop()
@@ -96,10 +95,15 @@ void XenEvtchn::stop()
 		mPollFd->stop();
 	}
 #endif
-	if (mThread.joinable())
-	{
+	if (mThread.joinable()) {
+	        LOG(mLog, INFO) << "joining evtchn thread";
+                mNeedJoin = true;
+                SetEvent(mEventHandle);
 		mThread.join();
-	}
+	        LOG(mLog, INFO) << "evtchn thread joined";
+	} else {
+	        LOG(mLog, INFO) << "evtchn not joinable";
+        }
 
 	mStarted = false;
 }
@@ -199,10 +203,16 @@ void XenEvtchn::eventThread()
 			mCallback();
 		}
 #else
-		bool watchLoop = true;
+                bool watchloop = true;
 		//DWORD entry = WaitForSingleObject(mWatchThread, INFINITE);
-		while (watchLoop) {
+		while (watchloop) {
+                        LOG(mLog, INFO) << "Waiting for event";
 			DWORD wait = WaitForMultipleObjectsEx(1, &mEventHandle, FALSE, INFINITE, TRUE);
+                        if (mNeedJoin) {
+                            LOG(mLog, INFO) << "Joining watch loop";
+                            return;
+                        }
+
 			LOG(mLog, INFO) << "4";
 			if (wait == WAIT_OBJECT_0) {
 				LOG(mLog, INFO) << "5";

@@ -128,6 +128,7 @@ private:
 	Callback mCallback;
 	ErrorCallback mErrorCallback;
 	std::atomic_bool mStarted;
+        std::atomic_bool mNeedJoin;
 	Log mLog;
 
 	std::mutex mMutex;
@@ -135,7 +136,6 @@ private:
 #ifndef _WIN32
 	std::unique_ptr<PollFd> mPollFd;
 #else
-	HANDLE mWatchThread;
 	HANDLE mEventHandle;
 #endif
 
