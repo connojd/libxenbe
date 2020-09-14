@@ -127,10 +127,18 @@ void xs_close(xs_handle *xsh /* NULL ok */) {
 
 char *xs_get_domain_path(xs_handle *h, unsigned int domid)
 {
+    constexpr int MAX_LEN = 64;
 
-    CHAR *value = (CHAR*)malloc(4096);
-    memset(value, 0x00, 4096);
-    snprintf(value, 4096, "/local/domain/%d", domid);
+    if (domid >= 65536)
+        return NULL;
+
+    CHAR *value = (CHAR*)malloc(MAX_LEN);
+    if (!value)
+        return NULL;
+
+    memset(value, 0x00, MAX_LEN);
+    snprintf(value, MAX_LEN, "/local/domain/%d", domid);
+
     return value;
 }
 
@@ -138,17 +146,19 @@ char **xs_directory(xs_handle *h, uint32_t t,
                     const char *path, unsigned int *num)
 {
     (void)t;
-	PCHAR *buf = NULL;
-	PCHAR *start = NULL;
-	int count = 0;
-    PCHAR buf2 = (PCHAR)malloc(4096);
-    memset(buf2, 0x00, 4096);
-    *num = 0;
-    DWORD rc = XcStoreDirectory(xc, (PCHAR) path, 4096, buf2);
+    PCHAR *buf = NULL;
+    PCHAR *start = NULL;
+    int count = 0;
+    constexpr int buf2_len = XC_PAGE_SIZE;
 
-    if(!rc) {
-        for(PCHAR p = buf2;; p++) {
-            if(p[0] != 0x00 && p[1] == 0x00) {
+    PCHAR buf2 = (PCHAR)malloc(buf2_len);
+    memset(buf2, 0x00, buf2_len);
+    *num = 0;
+
+    DWORD rc = XcStoreDirectory(xc, (PCHAR)path, buf2_len, buf2);
+    if (!rc) {
+        for (PCHAR p = buf2;; p++) {
+            if (p[0] != 0x00 && p[1] == 0x00) {
                 count++;
             }
 
@@ -157,8 +167,8 @@ char **xs_directory(xs_handle *h, uint32_t t,
             }
         }
 
-        buf = start = (PCHAR *)malloc(sizeof(PCHAR *)*count);
-        memset(buf, 0x00, sizeof(PCHAR *)*count);
+        buf = start = (PCHAR *)malloc(sizeof(PCHAR)*count);
+        memset(buf, 0x00, sizeof(PCHAR)*count);
 
         *buf++ = buf2;
         for (PCHAR p = buf2;;p++) {
@@ -180,10 +190,19 @@ char **xs_directory(xs_handle *h, uint32_t t,
 void *xs_read(xs_handle *h, uint32_t t,
               const char *path, unsigned int *len)
 {
-    CHAR *value = (CHAR*)malloc(4096);
-	memset(value, 0x00, 4096);
-    DWORD rc = XcStoreRead(xc, (PCHAR)path, (DWORD)4096, (PCHAR)value);
-	errno = rc;
+    CHAR *value = (CHAR*)malloc(XC_PAGE_SIZE);
+
+    if (!value)
+        return NULL;
+
+    memset(value, 0x00, XC_PAGE_SIZE);
+
+    auto rc = XcStoreRead(xc, (PCHAR)path, (DWORD)XC_PAGE_SIZE, (PCHAR)value);
+    if (rc != ERROR_SUCCESS) {
+        free(value);
+        return NULL;
+    }
+
     return value;
 }
 
@@ -254,7 +273,17 @@ xengnttab_map_domain_grant_refs(void *xgt,
                                 int prot)
 {
     PVOID address = NULL;
-    DWORD rc = XcGnttabMapForeignPages(xc, domid, count, (PULONG)refs, 0, 0, (XENIFACE_GNTTAB_PAGE_FLAGS)0, &address);
+    int flags = 0;
+
+    if ((prot & PROT_READ) == 0) {
+        return NULL;
+    }
+
+    if ((prot & PROT_WRITE) == 0) {
+        flags |= XENIFACE_GNTTAB_READONLY;
+    }
+
+    DWORD rc = XcGnttabMapForeignPages(xc, domid, count, (PULONG)refs, 0, 0, (XENIFACE_GNTTAB_PAGE_FLAGS)flags, &address);
     return address;
 }
 
