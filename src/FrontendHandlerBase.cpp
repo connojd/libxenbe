@@ -247,6 +247,7 @@ void FrontendHandlerBase::init()
 
 	if (mXenStore.checkIfExist(mBeStatePath))
 	{
+#ifndef _WIN32
 		mBackendState = static_cast<xenbus_state>(mXenStore.readInt(mBeStatePath));
 
 		if (mBackendState != XenbusStateClosed)
@@ -257,6 +258,9 @@ void FrontendHandlerBase::init()
 		{
 			setBackendState(XenbusStateInitialising);
 		}
+#else
+                setBackendState(XenbusStateInitialising);
+#endif
 	}
 }
 
