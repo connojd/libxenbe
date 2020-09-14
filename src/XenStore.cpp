@@ -174,8 +174,9 @@ vector<string> XenStore::readDirectory(const string& path)
 		{
 			result.push_back(items[i]);
 		}
-		// TODO: LEAK
-		//free(items);
+
+		free(items[0]);
+		free(items);
 
 		return result;
 	}
@@ -203,78 +204,141 @@ bool XenStore::checkIfExist(const string& path)
 
 void XenStore::setWatch(const string& path, WatchCallback callback)
 {
-//	lock_guard<mutex> lock(mMutex);
+	lock_guard<mutex> lock(mMutex);
+
 #ifndef _WIN32
 	if (!xs_watch(mXsHandle, path.c_str(), path.c_str()))
 	{
 		throw XenStoreException("Can't set xs watch for " + path, errno);
 	}
+
+	mWatches[path] = callback;
 #else
-	mWatchHandles[path] = CreateEvent(NULL, FALSE, FALSE, NULL);
-	PVOID handle;
-	std::string str(path);
-    DWORD rc = XcStoreAddWatch((PXENCONTROL_CONTEXT)mXsHandle, (PCHAR)str.c_str(), mWatchHandles[path], &handle);
-	if (rc)
-	{
+        if (mWatchThreads.count(path) != 0) {
+            LOG(mLog, INFO) << "Path " << path << " already has watch set...bailing";
+            return;
+        }
+
+        const HANDLE watch_event = CreateEvent(NULL,  /* use default attributes */
+                                               TRUE,  /* manual-reset event */
+                                               FALSE, /* initial state is clear */
+                                               NULL); /* an event has no name */
+        if (watch_event == NULL) {
+            LOG(mLog, ERROR) << "CreateEvent failed, LastError=0x" << std::hex
+                             << GetLastError() << ". setWatch failed "
+                             << "at path " << path;
+            return;
+        }
+
+	PVOID watch_handle = NULL;
+	std::string str = path;
+        DWORD rc = XcStoreAddWatch((PXENCONTROL_CONTEXT)mXsHandle,
+                                   (PCHAR)str.c_str(),
+                                   watch_event,
+                                   &watch_handle);
+	if (rc) {
 		throw XenStoreException("Can't set xs watch for " + path, rc);
 	}
-	mWatchOpaques[path] = handle;
-	SetEvent(mWatchThread);
+
+        auto ret = mWatchThreads.try_emplace(str,
+                                             str,
+                                             watch_handle,
+                                             watch_event,
+                                             callback);
+        if (!ret.second) {
+            LOG(mLog, ERROR) << "Failed to add watch thread at path " << path;
+
+            if (XcStoreRemoveWatch((PXENCONTROL_CONTEXT)mXsHandle, watch_handle)) {
+                LOG(mLog, ERROR) << "Failed to remove watch at path " << path;
+            }
+
+            CloseHandle(watch_event);
+            return;
+        }
+
+        LOG(mLog, INFO) << "Launching watch thread at path: " << path;
+        ret.first->second.launch();
 #endif
-	mWatches[path] = callback;
 }
 
 void XenStore::clearWatch(const string& path)
 {
-//	lock_guard<mutex> lock(mMutex);
+	lock_guard<mutex> lock(mMutex);
 
-	LOG(mLog, DEBUG) << "Clear watch: " << path;
+	LOG(mLog, INFO) << "Clear watch: " << path;
 #ifndef _WIN32
 	if (!xs_unwatch(mXsHandle, path.c_str(), path.c_str()))
 	{
 		LOG(mLog, ERROR) << "Failed to clear watch: " << path;
 	}
+
+	mWatches.erase(path);
 #else
-	DWORD rc = XcStoreRemoveWatch((PXENCONTROL_CONTEXT)mXsHandle, mWatchOpaques[path]);
-	if (rc)
-	{
+        auto itr = mWatchThreads.find(path);
+        if (itr == mWatchThreads.end()) {
+            LOG(mLog, INFO) << "clearWatch: no watch found at path " << path;
+            return;
+        }
+
+        auto thread = &itr->second;
+	auto rc = XcStoreRemoveWatch((PXENCONTROL_CONTEXT)mXsHandle, thread->mXcHandle);
+	if (rc) {
 		throw XenStoreException("Failed to clear watch:" + path, rc);
 	}
+
+        if (thread->is_joinable()) {
+            thread->alert();
+            thread->join();
+        }
+
+        CloseHandle(thread->mEvent);
+        mWatchThreads.erase(path);
 #endif
-	mWatches.erase(path);
 }
 
 void XenStore::clearWatches()
 {
-//	lock_guard<mutex> lock(mMutex);
+	lock_guard<mutex> lock(mMutex);
 
+#ifndef _WIN32
 	if (mWatches.size())
 	{
-		LOG(mLog, DEBUG) << "Clear watches";
+		LOG(mLog, INFO) << "Clear watches";
 
 		for (auto watch : mWatches)
 		{
-#ifndef _WIN32
+                        auto path = watch.first;
 			if (!xs_unwatch(mXsHandle, path.c_str(), path.c_str()))
 			{
 				LOG(mLog, ERROR) << "Failed to clear watch: " << path;
 			}
-#else
-			DWORD rc = XcStoreRemoveWatch((PXENCONTROL_CONTEXT)mXsHandle, mWatchOpaques[watch.first]);
-			if (rc)
-			{
-				throw XenStoreException("Failed to clear watch:" + watch.first, rc);
-			}
-#endif
 		}
 
 		mWatches.clear();
 	}
+#else
+        for (auto &watch : mWatchThreads) {
+            auto thread = &watch.second;
+	    auto rc = XcStoreRemoveWatch((PXENCONTROL_CONTEXT)mXsHandle, thread->mXcHandle);
+	    if (rc) {
+		throw XenStoreException("Failed to clear watch:" + thread->mPath, rc);
+	    }
+
+            if (thread->is_joinable()) {
+                thread->alert();
+                thread->join();
+            }
+
+            CloseHandle(thread->mEvent);
+        }
+
+        mWatchThreads.clear();
+#endif
 }
 
 void XenStore::start()
 {
-	DLOG(mLog, DEBUG) << "Start";
+	LOG(mLog, INFO) << "Start";
 
 	if (mStarted)
 	{
@@ -283,7 +347,9 @@ void XenStore::start()
 
 	mStarted = true;
 
+#ifndef _WIN32
 	mThread = thread(&XenStore::watchesThread, this);
+#endif
 }
 
 void XenStore::stop()
@@ -295,20 +361,19 @@ void XenStore::stop()
 
 	DLOG(mLog, DEBUG) << "Stop";
 
-	#ifndef _WIN32
+#ifndef _WIN32
 	if (mPollFd)
 	{
 		mPollFd->stop();
 	}
-	#else
-	LOG(mLog, INFO) << "quitting...";
-		SetEvent(mWatchThread);
-	#endif
 
-	if (mThread.joinable())
-	{
-		mThread.join();
-	}
+        if (mThread.joinable())
+        {
+                mThread.join();
+        }
+#else
+	LOG(mLog, INFO) << "quitting...";
+#endif
 
 	mStarted = false;
 }
@@ -328,8 +393,6 @@ void XenStore::init()
 
 #ifndef _WIN32
 	mPollFd.reset(new UnixPollFd(xs_fileno(mXsHandle), POLLIN));
-#else
-	mWatchThread = CreateEvent(NULL, FALSE, FALSE, NULL);
 #endif
 	LOG(mLog, DEBUG) << "Create xen store";
 }
@@ -344,6 +407,7 @@ void XenStore::release()
 	}
 }
 
+#ifndef _WIN32
 string XenStore::readXsWatch(string& token)
 {
 	string path;
@@ -387,7 +451,6 @@ void XenStore::watchesThread()
 {
 	try
 	{
-		#ifndef _WIN32
 		while(mPollFd->poll())
 		{
 			string token;
@@ -406,32 +469,7 @@ void XenStore::watchesThread()
 				}
 			}
 		}
-		#else
-		bool watchLoop = true;
-		DWORD haveWatches = WaitForSingleObject(mWatchThread, INFINITE);
-		if (haveWatches == WAIT_OBJECT_0) {
-			ResetEvent(mWatchThread);
-			while(watchLoop) {
-				int size = mWatchHandles.size();
-				std::vector<HANDLE> waitHandles;
-				for (auto h : mWatchHandles) {
-					waitHandles.push_back(h.second);
-				}
-				DWORD wait = WaitForMultipleObjectsEx(size, &waitHandles[0], FALSE, INFINITE, TRUE);
-
-				for(auto watch : mWatchHandles ) {
-					if(watch.second == waitHandles[wait]) {
-						auto callback = getWatchCallback(watch.first);
-						if (callback) {
-							callback(watch.first);
-						}
-					}
-				}
-				ResetEvent(waitHandles[wait]);
-			}
-		}
-		#endif
-	}
+        }
 	catch(const std::exception& e)
 	{
 		if (mErrorCallback)
@@ -444,5 +482,6 @@ void XenStore::watchesThread()
 		}
 	}
 }
+#endif
 
 }

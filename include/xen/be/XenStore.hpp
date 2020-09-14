@@ -50,6 +50,82 @@ class XENDLL XenStoreException : public Exception
 	using Exception::Exception;
 };
 
+/**
+ * Callback which is called when the watch is triggered
+ */
+using WatchCallback = std::function<void(const std::string& path)>;
+
+struct WatchThread
+{
+        std::string mPath;
+        PVOID mXcHandle;
+        HANDLE mEvent;
+        WatchCallback mCallback;
+        std::atomic_bool mAlerted;
+        Log mLog;
+        std::thread mThread;
+
+        WatchThread(std::string path,
+                    PVOID handle,
+                    HANDLE event,
+                    WatchCallback cb) :
+                mPath{path},
+                mXcHandle{handle},
+                mEvent{event},
+                mCallback{cb},
+                mAlerted{false},
+                mLog{"watch@" + path}
+        { }
+
+        void launch()
+        {
+                mThread = std::thread(std::bind(&WatchThread::run, this));
+        }
+
+        void alert() noexcept
+        {
+                mAlerted = true;
+                SetEvent(mEvent);
+        }
+
+        void join()
+        {
+                mThread.join();
+        }
+
+        bool is_joinable() noexcept
+        {
+                return mThread.joinable();
+        }
+
+        void run()
+        {
+                while (true) {
+                        auto rc = WaitForSingleObject(mEvent, INFINITE);
+
+                        ResetEvent(mEvent);
+
+                        if (rc != WAIT_OBJECT_0) {
+                                LOG(mLog, INFO) << "Wait failed, rc=0x" << std::hex << rc;
+                                return;
+                        }
+
+                        if (mAlerted) {
+                                return;
+                        }
+
+                        LOG(mLog, INFO) << "calling callback...";
+
+                        try {
+                                mCallback(mPath);
+                        } catch (std::exception &e) {
+                                LOG(mLog, INFO) << "...failed, e.what=" << e.what();
+                                return;
+                        }
+                }
+        }
+};
+
 /***************************************************************************//**
  * Provides Xen Store functionality.
  * @ingroup xen
@@ -57,11 +133,6 @@ class XENDLL XenStoreException : public Exception
 class XENDLL XenStore
 {
 public:
-
-	/**
-	 * Callback which is called when the watch is triggered
-	 */
-	typedef std::function<void(const std::string& path)> WatchCallback;
 
 	/**
 	 * @param errorCallback callback called on XS watches error
@@ -175,25 +246,21 @@ private:
 	std::atomic_bool mStarted;
 	Log mLog;
 
-	std::unordered_map<std::string, WatchCallback> mWatches;
-
-	std::thread mThread;
 	std::mutex mMutex;
 
-	#ifndef _WIN32
+#ifndef _WIN32
+	std::thread mThread;
+	std::unordered_map<std::string, WatchCallback> mWatches;
 	std::unique_ptr<PollFd> mPollFd;
-	#else
-	std::unordered_map<std::string, HANDLE> mWatchHandles;
-	std::unordered_map<std::string, PVOID> mWatchOpaques;
-	HANDLE mWatchThread;
-	#endif
-
-	void init();
-	void release();
-
 	void watchesThread();
 	std::string readXsWatch(std::string& token);
 	WatchCallback getWatchCallback(const std::string& path);
+#else
+	std::unordered_map<std::string, WatchThread> mWatchThreads;
+#endif
+
+	void init();
+	void release();
 };
 
 }
