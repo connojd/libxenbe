@@ -163,13 +163,28 @@ public:
 	 * @param[in] domId    frontend domain id
 	 * @param[in] port     event channel port number
 	 * @param[in] ref      ring buffer ref number
-	 * @param[in] size ring buffer size
+	 * @param[in] nr_ents  number of entries in the shared ring
+	 * @param[in] size     number of bytes in the shared ring
 	 */
-	RingBufferInBase(domid_t domId, evtchn_port_t port,
-					 grant_ref_t ref, int size = XC_PAGE_SIZE) :
+	RingBufferInBase(domid_t domId,
+                         evtchn_port_t port,
+			 grant_ref_t ref,
+                         int nr_ents,
+                         int size = XC_PAGE_SIZE) :
 		RingBufferBase(domId, port, ref)
 	{
-		BACK_RING_INIT(&mRing, static_cast<Page*>(mBuffer.get()), size);
+                /*
+                 * NOTE: We dont use BACK_RING_INIT because it uses
+                 * __RING_SIZE which casts its pointer arguments to long, which on
+                 * Windows is only 32 bits. Instead we initialize the ring by hand.
+                 */
+
+		/*BACK_RING_INIT(&mRing, static_cast<Page*>(mBuffer.get()), size); */
+
+                mRing.rsp_prod_pvt = 0;
+                mRing.req_cons = 0;
+                mRing.nr_ents = nr_ents;
+                mRing.sring = static_cast<Page*>(mBuffer.get());
 	}
 
 protected:
