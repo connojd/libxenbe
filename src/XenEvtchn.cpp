@@ -100,6 +100,7 @@ void XenEvtchn::stop()
                 mNeedJoin = true;
                 SetEvent(mEventHandle);
 		mThread.join();
+                CloseHandle(mEventHandle);
 	        LOG(mLog, INFO) << "evtchn thread joined";
 	} else {
 	        LOG(mLog, INFO) << "evtchn not joinable";
@@ -140,7 +141,7 @@ void XenEvtchn::init(domid_t domId, evtchn_port_t port)
 #ifndef _WIN32
 	mPort = xenevtchn_bind_interdomain(mHandle, domId, port);
 #else
-	mEventHandle = CreateEvent(NULL, FALSE, FALSE, NULL);
+	mEventHandle = CreateEvent(NULL, TRUE, FALSE, NULL);
 	DWORD rc = XcEvtchnBindInterdomain((PXENCONTROL_CONTEXT)mHandle, domId, port, mEventHandle, FALSE, &mPort);
 #endif
 	if (mPort == -1 || rc != 0)
@@ -166,8 +167,11 @@ void XenEvtchn::release()
 
 	if (mHandle)
 	{
+#ifndef _WIN32
 		xenevtchn_close(mHandle);
-
+#else
+                XcEvtchnClose((PXENCONTROL_CONTEXT)mHandle, mPort);
+#endif
 		DLOG(mLog, DEBUG) << "Delete event channel, port: " << mPort;
 	}
 }
@@ -203,19 +207,16 @@ void XenEvtchn::eventThread()
 			mCallback();
 		}
 #else
-                bool watchloop = true;
-		//DWORD entry = WaitForSingleObject(mWatchThread, INFINITE);
-		while (watchloop) {
-                        LOG(mLog, INFO) << "Waiting for event";
-			DWORD wait = WaitForMultipleObjectsEx(1, &mEventHandle, FALSE, INFINITE, TRUE);
+		while (true) {
+			DWORD wait = WaitForSingleObject(mEventHandle, INFINITE);
+			ResetEvent(mEventHandle);
+
                         if (mNeedJoin) {
                             LOG(mLog, INFO) << "Joining watch loop";
                             return;
                         }
 
-			LOG(mLog, INFO) << "4";
 			if (wait == WAIT_OBJECT_0) {
-				LOG(mLog, INFO) << "5";
 				if (mCallback) {
 					mCallback();
 				}
@@ -227,11 +228,7 @@ void XenEvtchn::eventThread()
 			} else {
 				LOG(mLog, INFO) << "weird wait object";
 			}
-			LOG(mLog, INFO) << ResetEvent(mEventHandle);
 		}
-		//else {
-		//	LOG(mLog, INFO) << entry << GetLastError();;
-		//}
 #endif
 	}
 	catch(const std::exception& e)
