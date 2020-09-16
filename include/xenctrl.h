@@ -26,7 +26,12 @@ typedef HANDLE xengnttab_handle;
 #define PROT_NONE 0x0
 #define XC_PAGE_SIZE 4096
 #ifdef _WIN32
-#define XENDLL __declspec(dllexport)
+// It works to build libxenbe as a static .lib for now. Doing
+// so and not defining __declspec(dllexport) prevents alot of warnings
+// from MSVC about STL types needing dllexport. If we ever need to build
+// a dll, then those warnings will need to be addressed.
+//#define XENDLL __declspec(dllexport)
+#define XENDLL
 #else
 #define XENDLL
 #endif
