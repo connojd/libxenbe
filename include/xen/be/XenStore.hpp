@@ -106,7 +106,7 @@ struct WatchThread
                         ResetEvent(mEvent);
 
                         if (rc != WAIT_OBJECT_0) {
-                                LOG(mLog, INFO) << "Wait failed, rc=0x" << std::hex << rc;
+                                LOG(mLog, ERROR) << "Wait failed, rc=0x" << std::hex << rc;
                                 return;
                         }
 
@@ -114,12 +114,12 @@ struct WatchThread
                                 return;
                         }
 
-                        LOG(mLog, INFO) << "calling callback...";
+                        LOG(mLog, DEBUG) << "calling callback...";
 
                         try {
                                 mCallback(mPath);
                         } catch (std::exception &e) {
-                                LOG(mLog, INFO) << "...failed, e.what=" << e.what();
+                                LOG(mLog, ERROR) << "...failed, e.what=" << e.what();
                                 return;
                         }
                 }
