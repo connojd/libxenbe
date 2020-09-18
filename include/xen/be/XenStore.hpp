@@ -137,7 +137,7 @@ public:
 	/**
 	 * @param errorCallback callback called on XS watches error
 	 */
-	explicit XenStore(ErrorCallback errorCallback = nullptr);
+	explicit XenStore(ErrorCallback errorCallback = nullptr, bool wait = false);
 	XenStore(const XenStore&) = delete;
 	XenStore& operator=(XenStore const&) = delete;
 	~XenStore();
@@ -259,7 +259,7 @@ private:
 	std::unordered_map<std::string, WatchThread> mWatchThreads;
 #endif
 
-	void init();
+	void init(bool wait);
 	void release();
 };
 

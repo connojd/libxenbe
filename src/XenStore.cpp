@@ -18,6 +18,7 @@
   * Copyright (C) 2016 EPAM Systems Inc.
  */
 #include "XenStore.hpp"
+#include <chrono>
 
 #ifndef _WIN32
 #include <poll.h>
@@ -35,7 +36,7 @@ namespace XenBackend {
  * XenStore
  ******************************************************************************/
 
-XenStore::XenStore(ErrorCallback errorCallback) :
+XenStore::XenStore(ErrorCallback errorCallback, bool wait) :
 	mXsHandle(nullptr),
 	mErrorCallback(errorCallback),
 	mStarted(false),
@@ -43,7 +44,7 @@ XenStore::XenStore(ErrorCallback errorCallback) :
 {
 	try
 	{
-		init();
+		init(wait);
 	}
 	catch(const std::exception& e)
 	{
@@ -382,14 +383,19 @@ void XenStore::stop()
  * Private
  ******************************************************************************/
 
-void XenStore::init()
+void XenStore::init(bool wait)
 {
 	mXsHandle = xs_open(0);
 
-	if (!mXsHandle)
-	{
+        if (wait) {
+                while (!mXsHandle) {
+                        using namespace std::chrono_literals;
+                        std::this_thread::sleep_for(1ms);
+                        mXsHandle = xs_open(0);
+                }
+	} else if (!mXsHandle) {
 		throw XenStoreException("Can't open xs daemon", errno);
-	}
+        }
 
 #ifndef _WIN32
 	mPollFd.reset(new UnixPollFd(xs_fileno(mXsHandle), POLLIN));

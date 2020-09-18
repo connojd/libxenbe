@@ -75,8 +75,8 @@ namespace XenBackend {
  * BackendBase
  ******************************************************************************/
 
-BackendBase::BackendBase(const string& name, const string& deviceName) :
-	mXenStore(bind(&BackendBase::onError, this, _1)),
+BackendBase::BackendBase(const string& name, const string& deviceName, bool wait) :
+	mXenStore(bind(&BackendBase::onError, this, _1), wait),
 	mDomId(0),
 	mDeviceName(deviceName),
 	mLog(name.empty() ? "Backend" : name)
