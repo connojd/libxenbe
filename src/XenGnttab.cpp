@@ -56,14 +56,14 @@ xengnttab_handle* XenGnttab::getHandle()
  ******************************************************************************/
 
 XenGnttabBuffer::XenGnttabBuffer(domid_t domId, grant_ref_t ref, int prot,
-								 size_t offset) :
-		XenGnttabBuffer(domId, &ref, 1, prot, offset)
+	size_t offset) :
+	XenGnttabBuffer(domId, &ref, 1, prot, offset)
 {
 
 }
 
 XenGnttabBuffer::XenGnttabBuffer(domid_t domId, const grant_ref_t* refs,
-								 size_t count, int prot, size_t offset) :
+	size_t count, int prot, size_t offset) :
 	mLog("XenGnttabBuffer")
 {
 	init(domId, refs, count, prot, offset);
@@ -79,7 +79,7 @@ XenGnttabBuffer::~XenGnttabBuffer()
  ******************************************************************************/
 
 void XenGnttabBuffer::init(domid_t domId, const grant_ref_t* refs,
-						   size_t count, int prot, size_t offset)
+	size_t count, int prot, size_t offset)
 {
 	mHandle = XenGnttab::getHandle();
 	mBuffer = nullptr;
@@ -92,8 +92,8 @@ void XenGnttabBuffer::init(domid_t domId, const grant_ref_t* refs,
 
 
 	mBuffer = xengnttab_map_domain_grant_refs(mHandle, count, domId,
-											  const_cast<grant_ref_t*>(refs),
-											  PROT_READ | PROT_WRITE);
+                                                  const_cast<grant_ref_t*>(refs),
+						  PROT_READ | PROT_WRITE);
 
 	if (!mBuffer)
 	{

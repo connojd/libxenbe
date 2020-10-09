@@ -39,10 +39,15 @@ xc_interface *xc_interface_open(void *logger,
                                 void *dombuild_logger,
                                 unsigned open_flags)
 {
-    DWORD rc;
+    (void)logger;
+    (void)dombuild_logger;
+    (void)open_flags;
 
-    rc = XcOpen(NULL, &xc);
-    return (xc_interface*)xc;
+    if (!xc) {
+        (void)XcOpen(NULL, &xc);
+    }
+
+    return (xc_interface *)xc;
 }
 
 int
@@ -283,7 +288,14 @@ xengnttab_map_domain_grant_refs(void *xgt,
         flags |= XENIFACE_GNTTAB_READONLY;
     }
 
-    DWORD rc = XcGnttabMapForeignPages(xc, domid, count, (PULONG)refs, 0, 0, (XENIFACE_GNTTAB_PAGE_FLAGS)flags, &address);
+    (VOID)XcGnttabMapForeignPages(xc,
+                                  domid,
+                                  count,
+                                  (PULONG)refs,
+                                  0,
+                                  0,
+                                  (XENIFACE_GNTTAB_PAGE_FLAGS)flags,
+                                  &address);
     return address;
 }
 

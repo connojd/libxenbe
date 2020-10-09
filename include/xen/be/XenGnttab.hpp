@@ -136,7 +136,7 @@ private:
 
 
 	void init(domid_t domId, const grant_ref_t* refs, size_t count, int prot,
-			  size_t offset);
+	          size_t offset);
 	void release();
 };
 
