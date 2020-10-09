@@ -101,7 +101,7 @@ BackendBase::~BackendBase()
 
 	mFrontendHandlers.clear();
 
-	LOG(mLog, INFO) << "Delete" << __func__;
+	LOG(mLog, DEBUG) << "Delete" << __func__;
 }
 
 /*******************************************************************************
@@ -206,7 +206,7 @@ void BackendBase::deviceListChanged(const string& path, domid_t domId)
 void BackendBase::frontendPathChanged(const string& path, domid_t domId,
 									  uint16_t devId)
 {
-	LOG(mLog, INFO) << "Frontend path changed: " << path;
+	LOG(mLog, DEBUG) << "Frontend path changed: " << path;
 
 	if (!mXenStore.checkIfExist(path))
 	{

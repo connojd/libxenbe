@@ -38,7 +38,7 @@ RingBufferBase::RingBufferBase(domid_t domId, evtchn_port_t port,
 	mPort(port),
 	mRef(ref)
 {
-	LOG(mLog, INFO) << "Create ring buffer, port: " << mPort
+	LOG(mLog, DEBUG) << "Create ring buffer, port: " << mPort
 					 << ", ref: " << mRef;
 }
 

@@ -116,7 +116,7 @@ string XenStore::readString(const string& path)
 
 	free(pData);
 
-	LOG(mLog, INFO) << "Read string " << path << " : " << result;
+	LOG(mLog, DEBUG) << "Read string " << path << " : " << result;
 
 	return result;
 }
@@ -182,7 +182,7 @@ vector<string> XenStore::readDirectory(const string& path)
 		return result;
 	}
 	else {
-		LOG(mLog, INFO) << "No domains!";
+		LOG(mLog, DEBUG) << "No domains!";
 	}
 
 	return vector<string>();
@@ -216,7 +216,7 @@ void XenStore::setWatch(const string& path, WatchCallback callback)
 	mWatches[path] = callback;
 #else
         if (mWatchThreads.count(path) != 0) {
-            LOG(mLog, INFO) << "Path " << path << " already has watch set...bailing";
+            LOG(mLog, DEBUG) << "Path " << path << " already has watch set...bailing";
             return;
         }
 
@@ -257,7 +257,7 @@ void XenStore::setWatch(const string& path, WatchCallback callback)
             return;
         }
 
-        LOG(mLog, INFO) << "Launching watch thread at path: " << path;
+        LOG(mLog, DEBUG) << "Launching watch thread at path: " << path;
         ret.first->second.launch();
 #endif
 }
@@ -266,7 +266,7 @@ void XenStore::clearWatch(const string& path)
 {
 	lock_guard<mutex> lock(mMutex);
 
-	LOG(mLog, INFO) << "Clear watch: " << path;
+	LOG(mLog, DEBUG) << "Clear watch: " << path;
 #ifndef _WIN32
 	if (!xs_unwatch(mXsHandle, path.c_str(), path.c_str()))
 	{
@@ -277,7 +277,7 @@ void XenStore::clearWatch(const string& path)
 #else
         auto itr = mWatchThreads.find(path);
         if (itr == mWatchThreads.end()) {
-            LOG(mLog, INFO) << "clearWatch: no watch found at path " << path;
+            LOG(mLog, DEBUG) << "clearWatch: no watch found at path " << path;
             return;
         }
 
@@ -339,7 +339,7 @@ void XenStore::clearWatches()
 
 void XenStore::start()
 {
-	LOG(mLog, INFO) << "Start";
+	LOG(mLog, DEBUG) << "Start";
 
 	if (mStarted)
 	{
@@ -360,7 +360,7 @@ void XenStore::stop()
 		return;
 	}
 
-	DLOG(mLog, DEBUG) << "Stop";
+	LOG(mLog, DEBUG) << "Stop";
 
 #ifndef _WIN32
 	if (mPollFd)

@@ -112,7 +112,7 @@ void FrontendHandlerBase::stop()
 
 void FrontendHandlerBase::addRingBuffer(RingBufferPtr ringBuffer)
 {
-	LOG(mLog, INFO) << Utils::logDomId(mDomId, mDevId)
+	LOG(mLog, DEBUG) << Utils::logDomId(mDomId, mDevId)
 					<< "Add ring buffer, ref: "
 					<< ringBuffer->getRef() << ", port: "
 					<< ringBuffer->getPort();
@@ -130,7 +130,7 @@ void FrontendHandlerBase::setBackendState(xenbus_state state)
 		return;
 	}
 
-	LOG(mLog, INFO) << Utils::logDomId(mDomId, mDevId)
+	LOG(mLog, DEBUG) << Utils::logDomId(mDomId, mDevId)
 					<< "Set backend state to: "
 					<< Utils::logState(state);
 
@@ -294,7 +294,7 @@ void FrontendHandlerBase::frontendStateChanged()
 
 	mFrontendState = state;
 
-	LOG(mLog, INFO) << Utils::logDomId(mDomId, mDevId)
+	LOG(mLog, DEBUG) << Utils::logDomId(mDomId, mDevId)
 					<< "Frontend state changed to: "
 					<< Utils::logState(state);
 
@@ -319,7 +319,7 @@ void FrontendHandlerBase::backendStateChanged()
 
 	mBackendState = state;
 
-	LOG(mLog, INFO) << Utils::logDomId(mDomId, mDevId)
+	LOG(mLog, DEBUG) << Utils::logDomId(mDomId, mDevId)
 					<< "Backend state changed to: "
 					<< Utils::logState(state);
 
@@ -373,7 +373,7 @@ void FrontendHandlerBase::onError(const std::exception& e)
 
 void FrontendHandlerBase::close(xenbus_state stateAfterClose)
 {
-	LOG(mLog, INFO) << "Close";
+	LOG(mLog, DEBUG) << "Close";
 
 	if (mBackendState != XenbusStateClosed)
 	{
