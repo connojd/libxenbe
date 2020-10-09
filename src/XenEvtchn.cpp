@@ -220,11 +220,6 @@ void XenEvtchn::eventThread()
 				if (mCallback) {
 					mCallback();
 				}
-
-				DWORD rc = XcEvtchnUnmask((PXENCONTROL_CONTEXT)mHandle, mPort);
-				if (rc) {
-					LOG(mLog, INFO) << "Failed to unmask event channel" << rc;
-				}
 			} else {
 				LOG(mLog, INFO) << "weird wait object";
 			}
