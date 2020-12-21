@@ -23,7 +23,6 @@ if(WITH_WIN)
         file(RENAME ${XEN_INCS}/tmp/public ${XEN_INCS}/xen)
 
 	include_directories(${XEN_INCS})
-        include_directories(${XENBUS_WINDOWS_INCLUDE_PATH})
         include_directories(${XENIFACE_WINDOWS_INCLUDE_PATH})
 endif()
 
@@ -43,15 +42,6 @@ set(SOURCES
 	XenStat.cpp
 	XenStore.cpp
 )
-
-################################################################################
-# Libraries
-################################################################################
-if(WITH_WIN)
-	link_directories(${XENIFACE_WINDOWS_LIB_PATH} ${XENBUS_WINDOWS_LIB_PATH})
-endif()
-
-
 
 ################################################################################
 # Targets

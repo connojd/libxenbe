@@ -23,9 +23,6 @@ message(STATUS "XEN_LIB_PATH                  = ${XEN_LIB_PATH}")
 message(STATUS "XC_INCLUDE_PATH               = ${XC_INCLUDE_PATH}")
 message(STATUS "XC_LIB_PATH                   = ${XC_LIB_PATH}")
 message(STATUS "XENIFACE_WINDOWS_INCLUDE_PATH = ${XENIFACE_WINDOWS_INCLUDE_PATH}")
-message(STATUS "XENIFACE_WINDOWS_LIB_PATH     = ${XENIFACE_WINDOWS_LIB_PATH}")
-message(STATUS "XENBUS_WINDOWS_INCLUDE_PATH   = ${XENBUS_WINDOWS_INCLUDE_PATH}")
-message(STATUS "XENBUS_WINDOWS_LIB_PATH       = ${XENBUS_WINDOWS_LIB_PATH}")
 message(STATUS)
 
 ################################################################################
@@ -76,7 +73,6 @@ link_directories(
 	${XC_LIB_PATH}
 	${XEN_WINDOW_LIB_PATH}
 )
-
 
 ################################################################################
 # Sources
